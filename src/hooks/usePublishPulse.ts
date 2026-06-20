@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useUploadFile } from './useUploadFile';
 import { useNostrPublish } from './useNostrPublish';
+import { getThemeImageUrl } from '@/lib/themeImages';
 import type { WeeklyTheme, WeeklyPulse } from '@/lib/types';
 
 interface PublishParams {
@@ -55,11 +56,7 @@ export function usePublishPulse() {
   return useMutation({
     mutationFn: async ({ theme, pulse }: PublishParams) => {
       // Step 1: Fetch the local theme image as a File
-      const imageLocalPath = theme.rank === 1
-        ? '/images/theme-1-hawkish-fed.jpeg'
-        : theme.rank === 2
-          ? '/images/theme-2-bitcoin-yield.jpeg'
-          : '/images/theme-3-strategy-stress.jpeg';
+      const imageLocalPath = getThemeImageUrl(theme.rank);
 
       const response = await fetch(imageLocalPath);
       if (!response.ok) {

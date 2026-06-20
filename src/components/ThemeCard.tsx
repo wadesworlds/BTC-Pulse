@@ -15,6 +15,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getThemeImageUrl } from '@/lib/themeImages';
 import type { WeeklyTheme } from '@/lib/types';
 
 interface ThemeCardProps {
@@ -68,11 +69,7 @@ export function ThemeCard({
   const config = rankConfig[theme.rank];
   const RankIcon = config.icon;
 
-  const imageUrl = theme.rank === 1
-    ? '/images/theme-1-hawkish-fed.jpeg'
-    : theme.rank === 2
-      ? '/images/theme-2-bitcoin-yield.jpeg'
-      : '/images/theme-3-strategy-stress.jpeg';
+  const imageUrl = getThemeImageUrl(theme.rank);
 
   const canApprove = isLoggedIn && !isPublished && !isOtherPublished && !isPublishing;
 

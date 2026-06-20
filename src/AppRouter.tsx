@@ -5,9 +5,17 @@ import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
 import NotFound from "./pages/NotFound";
 
+let basename = '/';
+try {
+  const rawBase = import.meta.env?.BASE_URL ?? '/';
+  basename = rawBase.replace(/\/$/, '') || '/';
+} catch {
+  // Shakespeare preview may not define import.meta.env
+}
+
 export function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Index />} />
