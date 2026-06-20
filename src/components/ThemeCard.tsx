@@ -3,14 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Download, ExternalLink, Trophy, Medal, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Send,
+  ExternalLink,
+  Trophy,
+  Medal,
+  Award,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+  Loader2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { WeeklyTheme } from '@/lib/types';
 
 interface ThemeCardProps {
   theme: WeeklyTheme;
-  isSelected: boolean;
-  onSelect: (rank: 1 | 2 | 3) => void;
+  isPublished: boolean;
+  isPublishing: boolean;
+  isOtherPublished: boolean;
+  isLoggedIn: boolean;
+  onApprove: (rank: 1 | 2 | 3) => void;
 }
 
 const rankConfig = {
@@ -43,26 +56,17 @@ const rankConfig = {
   },
 } as const;
 
-export function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
+export function ThemeCard({
+  theme,
+  isPublished,
+  isPublishing,
+  isOtherPublished,
+  isLoggedIn,
+  onApprove,
+}: ThemeCardProps) {
   const [expanded, setExpanded] = useState(false);
   const config = rankConfig[theme.rank];
   const RankIcon = config.icon;
-
-  const handleDownload = () => {
-    const imageUrl = theme.rank === 1
-      ? '/images/theme-1-hawkish-fed.jpeg'
-      : theme.rank === 2
-        ? '/images/theme-2-bitcoin-yield.jpeg'
-        : '/images/theme-3-strategy-stress.jpeg';
-
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `btc-pulse-theme-${theme.rank}-${theme.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.jpeg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    onSelect(theme.rank);
-  };
 
   const imageUrl = theme.rank === 1
     ? '/images/theme-1-hawkish-fed.jpeg'
@@ -70,12 +74,15 @@ export function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
       ? '/images/theme-2-bitcoin-yield.jpeg'
       : '/images/theme-3-strategy-stress.jpeg';
 
+  const canApprove = isLoggedIn && !isPublished && !isOtherPublished && !isPublishing;
+
   return (
     <Card
       className={cn(
         'relative overflow-hidden transition-all duration-300',
-        isSelected && `ring-2 ${config.ring} ${config.borderColor}`,
-        !isSelected && 'hover:shadow-lg',
+        isPublished && `ring-2 ${config.ring} ${config.borderColor}`,
+        !isPublished && !isOtherPublished && 'hover:shadow-lg',
+        isOtherPublished && !isPublished && 'opacity-60',
       )}
     >
       {/* Gradient accent */}
@@ -87,7 +94,7 @@ export function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
           src={imageUrl}
           alt={`Theme ${theme.rank}: ${theme.title}`}
           className="w-full h-full object-cover"
-          loading={theme.rank === 1 ? 'eager' : 'lazy'}
+          loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
@@ -97,6 +104,12 @@ export function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
             <RankIcon className="size-4" />
             {config.label}
           </span>
+          {isPublished && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
+              <CheckCircle className="size-3" />
+              Published
+            </span>
+          )}
         </div>
 
         {/* Title overlay */}
@@ -173,19 +186,28 @@ export function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button
-            onClick={handleDownload}
-            variant={isSelected ? 'default' : 'outline'}
-            size="sm"
-            className="gap-2"
-          >
-            <Download className="size-4" />
-            {isSelected ? 'Downloaded' : 'Download Image'}
-          </Button>
-          {isSelected && (
-            <Badge variant="secondary" className="text-xs">
-              Selected for this week
+          {isPublished ? (
+            <Badge className="bg-green-600 text-white text-xs gap-1.5 py-1">
+              <CheckCircle className="size-3.5" />
+              Published to Nostr
             </Badge>
+          ) : isPublishing ? (
+            <Button variant="default" size="sm" className="gap-2" disabled>
+              <Loader2 className="size-4 animate-spin" />
+              Publishing...
+            </Button>
+          ) : (
+            <Button
+              onClick={() => onApprove(theme.rank)}
+              variant={canApprove ? 'default' : 'outline'}
+              size="sm"
+              className="gap-2"
+              disabled={!canApprove}
+              title={!isLoggedIn ? 'Sign in to publish' : isOtherPublished ? 'Another theme was already published this week' : undefined}
+            >
+              <Send className="size-4" />
+              Approve &amp; Publish
+            </Button>
           )}
         </div>
       </CardContent>

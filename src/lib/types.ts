@@ -22,8 +22,9 @@ export interface WeeklyPulse {
   weekLabel: string;
   dateRange: string;
   generatedAt: string;
-  status: 'pending' | 'generated' | 'selected';
-  selectedThemeRank?: 1 | 2 | 3;
+  status: 'pending' | 'generated' | 'publishing' | 'published';
+  publishedThemeRank?: 1 | 2 | 3;
+  publishedEventId?: string;
   themes: WeeklyTheme[];
   limitations?: string[];
 }

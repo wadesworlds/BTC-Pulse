@@ -1,20 +1,19 @@
 import { Badge } from '@/components/ui/badge';
-import { Zap, Clock, CalendarDays } from 'lucide-react';
+import { Zap, Clock, CalendarDays, CheckCircle } from 'lucide-react';
 import type { WeeklyPulse } from '@/lib/types';
 import { useNextRunCountdown } from '@/hooks/useNextRunCountdown';
 
 interface PulseHeaderProps {
   pulse: WeeklyPulse;
+  isPublished: boolean;
 }
 
-export function PulseHeader({ pulse }: PulseHeaderProps) {
+export function PulseHeader({ pulse, isPublished }: PulseHeaderProps) {
   const countdown = useNextRunCountdown();
 
-  const statusBadge = {
-    pending: { label: 'Pending', variant: 'outline' as const },
-    generated: { label: 'Ready for Review', variant: 'default' as const },
-    selected: { label: 'Complete', variant: 'secondary' as const },
-  }[pulse.status];
+  const statusBadge = isPublished
+    ? { label: 'Published', variant: 'secondary' as const, icon: CheckCircle }
+    : { label: 'Ready for Review', variant: 'default' as const, icon: null };
 
   return (
     <header className="relative isolate overflow-hidden rounded-2xl bg-card border shadow-sm">
@@ -30,7 +29,10 @@ export function PulseHeader({ pulse }: PulseHeaderProps) {
               BTC Weekly Pulse
             </span>
           </div>
-          <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+          <Badge variant={statusBadge.variant} className="gap-1">
+            {statusBadge.icon && <statusBadge.icon className="size-3" />}
+            {statusBadge.label}
+          </Badge>
         </div>
 
         {/* Main title */}
@@ -52,8 +54,10 @@ export function PulseHeader({ pulse }: PulseHeaderProps) {
 
         {/* Description */}
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Top 3 Bitcoin narratives identified from YouTube analysis of curated Bitcoin creators.
-          Download an image to mark this week as complete.
+          {isPublished
+            ? 'This week\u2019s theme has been approved and published to your Nostr feed. The workflow resets next Friday at 4\u202FPM\u202FPT.'
+            : 'Top 3 Bitcoin narratives identified from YouTube analysis of curated Bitcoin creators. Approve one to upload the image and publish to your Nostr account.'
+          }
         </p>
       </div>
     </header>

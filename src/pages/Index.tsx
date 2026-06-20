@@ -5,31 +5,74 @@ import { ThemeCard } from '@/components/ThemeCard';
 import { LimitationsNote } from '@/components/LimitationsNote';
 import { SourceList } from '@/components/SourceList';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LoginArea } from '@/components/auth/LoginArea';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { usePublishPulse } from '@/hooks/usePublishPulse';
+import { useToast } from '@/hooks/useToast';
 import { currentPulse } from '@/lib/weeklyData';
 
 const Index = () => {
   useSeoMeta({
     title: 'BTC Weekly Pulse \u2014 Top 3 Bitcoin Narratives This Week',
     description:
-      'Weekly Bitcoin narrative analysis from curated YouTube creators. Discover the top 3 themes driving Bitcoin discourse, with downloadable artwork for each.',
+      'Weekly Bitcoin narrative analysis from curated YouTube creators. Discover the top 3 themes driving Bitcoin discourse. Approve your pick and publish it to Nostr.',
   });
 
-  const [selectedRank, setSelectedRank] = useState<1 | 2 | 3 | null>(null);
+  const { user } = useCurrentUser();
+  const { toast } = useToast();
+  const publishMutation = usePublishPulse();
 
-  const handleSelect = useCallback((rank: 1 | 2 | 3) => {
-    setSelectedRank(rank);
-  }, []);
+  const [publishedRank, setPublishedRank] = useState<1 | 2 | 3 | null>(null);
+  const [publishingRank, setPublishingRank] = useState<1 | 2 | 3 | null>(null);
+
+  const handleApprove = useCallback(async (rank: 1 | 2 | 3) => {
+    const theme = currentPulse.themes.find((t) => t.rank === rank);
+    if (!theme) return;
+
+    setPublishingRank(rank);
+
+    try {
+      await publishMutation.mutateAsync({ theme, pulse: currentPulse });
+      setPublishedRank(rank);
+      toast({
+        title: 'Published to Nostr',
+        description: `Theme #${rank} "${theme.title}" has been published to your Nostr account with the theme image.`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast({
+        title: 'Publish failed',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setPublishingRank(null);
+    }
+  }, [publishMutation, toast]);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed theme toggle */}
-      <div className="fixed top-4 right-4 z-50">
+      {/* Top bar */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <LoginArea className="max-w-60" />
         <ThemeToggle />
       </div>
 
       <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
         {/* Header */}
-        <PulseHeader pulse={currentPulse} />
+        <PulseHeader
+          pulse={currentPulse}
+          isPublished={publishedRank !== null}
+        />
+
+        {/* Login prompt when not signed in */}
+        {!user && (
+          <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 px-6 py-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sign in with your Nostr account to approve and publish a theme to your feed.
+            </p>
+          </div>
+        )}
 
         {/* Theme Cards Grid */}
         <section>
@@ -38,8 +81,11 @@ const Index = () => {
               <ThemeCard
                 key={theme.rank}
                 theme={theme}
-                isSelected={selectedRank === theme.rank}
-                onSelect={handleSelect}
+                isPublished={publishedRank === theme.rank}
+                isPublishing={publishingRank === theme.rank}
+                isOtherPublished={publishedRank !== null && publishedRank !== theme.rank}
+                isLoggedIn={!!user}
+                onApprove={handleApprove}
               />
             ))}
           </div>
