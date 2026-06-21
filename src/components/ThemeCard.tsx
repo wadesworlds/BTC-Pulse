@@ -4,27 +4,28 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
-  Send,
+  Copy,
+  Check,
   ExternalLink,
   Trophy,
   Medal,
   Award,
   ChevronDown,
   ChevronUp,
-  CheckCircle,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getThemeImageUrl } from '@/lib/themeImages';
-import type { WeeklyTheme } from '@/lib/types';
+import type { WeeklyTheme, WeeklyPulse } from '@/lib/types';
+
+type CopyStatus = 'idle' | 'copying' | 'copied' | 'error';
 
 interface ThemeCardProps {
   theme: WeeklyTheme;
-  isPublished: boolean;
-  isPublishing: boolean;
-  isOtherPublished: boolean;
-  isLoggedIn: boolean;
-  onApprove: (rank: 1 | 2 | 3) => void;
+  pulse: WeeklyPulse;
+  copyStatus: CopyStatus;
+  onCopy: (theme: WeeklyTheme, pulse: WeeklyPulse) => void;
 }
 
 const rankConfig = {
@@ -59,11 +60,9 @@ const rankConfig = {
 
 export function ThemeCard({
   theme,
-  isPublished,
-  isPublishing,
-  isOtherPublished,
-  isLoggedIn,
-  onApprove,
+  pulse,
+  copyStatus,
+  onCopy,
 }: ThemeCardProps) {
   const [expanded, setExpanded] = useState(false);
   const config = rankConfig[theme.rank];
@@ -71,15 +70,12 @@ export function ThemeCard({
 
   const imageUrl = getThemeImageUrl(theme.rank);
 
-  const canApprove = isLoggedIn && !isPublished && !isOtherPublished && !isPublishing;
-
   return (
     <Card
       className={cn(
         'relative overflow-hidden transition-all duration-300',
-        isPublished && `ring-2 ${config.ring} ${config.borderColor}`,
-        !isPublished && !isOtherPublished && 'hover:shadow-lg',
-        isOtherPublished && !isPublished && 'opacity-60',
+        copyStatus === 'copied' && `ring-2 ${config.ring} ${config.borderColor}`,
+        copyStatus !== 'copied' && 'hover:shadow-lg',
       )}
     >
       {/* Gradient accent */}
@@ -101,12 +97,6 @@ export function ThemeCard({
             <RankIcon className="size-4" />
             {config.label}
           </span>
-          {isPublished && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
-              <CheckCircle className="size-3" />
-              Published
-            </span>
-          )}
         </div>
 
         {/* Title overlay */}
@@ -181,29 +171,32 @@ export function ThemeCard({
 
         <Separator />
 
-        {/* Actions */}
+        {/* Copy Action */}
         <div className="flex items-center gap-3">
-          {isPublished ? (
+          {copyStatus === 'copied' ? (
             <Badge className="bg-green-600 text-white text-xs gap-1.5 py-1">
-              <CheckCircle className="size-3.5" />
-              Published to Nostr
+              <Check className="size-3.5" />
+              Copied to clipboard
             </Badge>
-          ) : isPublishing ? (
+          ) : copyStatus === 'error' ? (
+            <Badge variant="destructive" className="text-xs gap-1.5 py-1">
+              <AlertCircle className="size-3.5" />
+              Copy failed
+            </Badge>
+          ) : copyStatus === 'copying' ? (
             <Button variant="default" size="sm" className="gap-2" disabled>
               <Loader2 className="size-4 animate-spin" />
-              Publishing...
+              Copying...
             </Button>
           ) : (
             <Button
-              onClick={() => onApprove(theme.rank)}
-              variant={canApprove ? 'default' : 'outline'}
+              onClick={() => onCopy(theme, pulse)}
+              variant="default"
               size="sm"
               className="gap-2"
-              disabled={!canApprove}
-              title={!isLoggedIn ? 'Sign in to publish' : isOtherPublished ? 'Another theme was already published this week' : undefined}
             >
-              <Send className="size-4" />
-              Approve &amp; Publish
+              <Copy className="size-4" />
+              Copy Text &amp; Image
             </Button>
           )}
         </div>
